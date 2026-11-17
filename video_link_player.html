@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080a09">
+  <title></title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 20px; background: #080a09; color: #f3f5f3;
+    }
+    main {
+      width: min(100%, 650px); padding: 25px; border: 1px solid #252b27;
+      border-radius: 22px; background: #111512; box-shadow: 0 18px 60px #0008;
+    }
+    .field { display: flex; gap: 9px; }
+    input {
+      min-width: 0; flex: 1; padding: 14px; border: 1px solid #343d37;
+      border-radius: 12px; background: #080b09; color: white; outline: none;
+      direction: ltr; text-align: left;
+    }
+    input:focus { border-color: #55c58a; }
+    button {
+      border: 0; border-radius: 12px; padding: 13px 16px; cursor: pointer;
+      background: #42b879; color: #06140c; font-weight: 700; font-size: .94rem;
+      display: inline-flex; justify-content: center; align-items: center;
+      min-height: 46px; white-space: nowrap;
+    }
+    .secondary { background: #252e28; color: #e8f1eb; }
+    button:hover { filter: brightness(1.08); }
+    .actions { display: flex; gap: 10px; margin-top: 12px; }
+    video {
+      display: none; width: 100%; max-height: 58vh; margin-top: 22px;
+      border-radius: 14px; background: #000;
+    }
+    @media (max-width: 500px) {
+      main { padding: 19px; }
+      .field { flex-direction: column; }
+      .field button, .actions button { width: 100%; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <form id="form">
+      <div class="field">
+        <input id="url" type="url" autocomplete="url" required>
+        <button id="externalBtn" type="button">Video Player</button>
+      </div>
+      <div class="actions">
+        <button id="browserBtn" type="submit" class="secondary">Play in website</button>
+      </div>
+    </form>
+    <video id="player" controls playsinline preload="metadata"></video>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const input = document.getElementById('url');
+    const player = document.getElementById('player');
+    const externalBtn = document.getElementById('externalBtn');
+    let objectUrl = null;
+
+    function getVideoUrl() {
+      try {
+        const url = new URL(input.value.trim());
+        if (!['http:', 'https:'].includes(url.protocol)) return null;
+        return url;
+      } catch {
+        return null;
+      }
+    }
+
+    function clearPlayer() {
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
+      player.style.display = 'none';
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+    }
+
+    function openExternal(url) {
+      const intent = 'intent://' + url.host + url.pathname + url.search + url.hash +
+        '#Intent;scheme=' + url.protocol.slice(0, -1) +
+        ';action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;type=video/*;end';
+      window.location.href = intent;
+      window.setTimeout(() => {
+        if (!document.hidden) window.open(url.href, '_blank', 'noopener');
+      }, 900);
+    }
+
+    externalBtn.addEventListener('click', () => {
+      const url = getVideoUrl();
+      if (url) openExternal(url);
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const url = getVideoUrl();
+      if (!url) return;
+      clearPlayer();
+      player.style.display = 'block';
+      player.src = url.href;
+      player.load();
+      player.play().catch(() => {});
+    });
+
+    player.addEventListener('error', () => {
+      player.pause();
+    });
+  </script>
+</body>
+</html>
